@@ -35,12 +35,11 @@ jobs:
           PROJ_DIR=$(dirname "$SETTINGS")
           echo "Found project directory at: $PROJ_DIR"
           cd "$PROJ_DIR"
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon --info
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: '**/app/build/outputs/apk/debug/app-debug.apk'
-
+          path: '**/app/build/outputs/apk/debug/app-debug.apk
           
