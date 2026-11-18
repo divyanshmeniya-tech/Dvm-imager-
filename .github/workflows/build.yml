@@ -22,13 +22,25 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
-      - name: Build debug APK with Gradle
-        run: gradle assembleDebug --stacktrace
+      - name: Find Project and Build APK
+        run: |
+          SETTINGS=$(find . -name settings.gradle -o -name settings.gradle.kts | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "Error: settings.gradle or settings.gradle.kts not found!"
+            exit 1
+          fi
+          PROJ_DIR=$(dirname "$SETTINGS")
+          echo "Found project directory at: $PROJ_DIR"
+          cd "$PROJ_DIR"
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: '**/app/build/outputs/apk/debug/app-debug.apk'
+
           
