@@ -1,0 +1,55 @@
+name: Build DVM Imager APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "dvm-imager.zip"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project
+        run: |
+          test -f dvm-imager.zip || { echo "dvm-imager.zip is not in the repository root"; exit 1; }
+          rm -rf project && mkdir project
+          unzip -q dvm-imager.zip -d project
+          SETTINGS=$(find project -name settings.gradle.kts | head -n 1)
+          test -n "$SETTINGS" || { echo "settings.gradle.kts not found in the zip"; exit 1; }
+          echo "PROJ=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Build debug APK
+        working-directory: ${{ env.PROJ }}
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp "$PROJ/app/build/outputs/apk/debug/app-debug.apk" DVM-Imager.apk
+
+      - name: Publish APK as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: DVM Imager build ${{ github.run_number }}
+          files: DVM-Imager.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DVM-Imager-APK
+          path: DVM-Imager.apk
